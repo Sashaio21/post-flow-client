@@ -24,8 +24,8 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      const { user, token } = await authApi.login(email, password);
-      setSession(user, token);
+      const { user } = await authApi.login(email, password);
+      setSession(user);
       navigate("/posts", { replace: true });
     } catch (err) {
       if (isAxiosError(err)) {

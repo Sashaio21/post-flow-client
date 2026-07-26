@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from "react-router-dom";
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { useTheme } from "../hooks/useTheme";
 
@@ -11,6 +11,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 export function AppLayout() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -40,7 +41,7 @@ export function AppLayout() {
 
             <button
               type="button"
-              onClick={logout}
+              onClick={() => logout().then(() => navigate("/login", { replace: true }))}
               className="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
             >
               Выйти

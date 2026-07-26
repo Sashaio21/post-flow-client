@@ -2,20 +2,13 @@ import axios from "axios";
 
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-});
-
-// Подставляем токен в каждый запрос, если он есть
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  withCredentials: true, // обязательно — иначе браузер не будет ни отправлять,
+                         // ни принимать httpOnly cookie при кросс-доменных запросах
 });
 
 // Эндпоинты, где 401 — это часть обычной логики формы (неверный пароль,
-// невалидный код и т.п.), а не признак протухшей сессии — редиректить не нужно
-const AUTH_ENDPOINTS = ["/users/login", "/users/register", "/users/verify"];
+// невалидный код и т.п.), а не признак протухшей cookie — редиректить не нужно
+const AUTH_ENDPOINTS = ["/users/login", "/users/register", "/users/verify", "/users/me"];
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -24,8 +17,6 @@ apiClient.interceptors.response.use(
     const isAuthEndpoint = AUTH_ENDPOINTS.some((path) => url.includes(path));
 
     if (error.response?.status === 401 && !isAuthEndpoint) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
       window.location.href = "/login";
     }
 

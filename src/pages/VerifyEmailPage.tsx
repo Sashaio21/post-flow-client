@@ -21,8 +21,8 @@ export function VerifyEmailPage() {
 
     try {
       // verify возвращает { user, token } — сразу логиним пользователя
-      const { user, token } = await authApi.verifyEmail(email, code);
-      setSession(user, token);
+      const { user } = await authApi.verifyEmail(email, code);
+      setSession(user);
       navigate("/posts", { replace: true });
     } catch (err) {
       if (isAxiosError(err)) {

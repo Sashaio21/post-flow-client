@@ -1,45 +1,48 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
-import type { AuthUser } from "../api/auth";
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { authApi, type AuthUser } from "../api/auth";
 
 type AuthContextValue = {
   user: AuthUser | null;
-  token: string | null;
   isAuthenticated: boolean;
-  setSession: (user: AuthUser, token: string) => void;
-  logout: () => void;
+  isLoading: boolean; // идёт проверка cookie при старте приложения
+  setSession: (user: AuthUser) => void;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() =>
-    localStorage.getItem("token")
-  );
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const raw = localStorage.getItem("user");
-    return raw ? (JSON.parse(raw) as AuthUser) : null;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Вызывается и после /login, и после /verify — оба возвращают { user, token }
-  function setSession(newUser: AuthUser, newToken: string) {
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
-    setToken(newToken);
+  // При каждой загрузке приложения (F5, открыли новую вкладку) — токен
+  // недоступен из JS, поэтому единственный способ узнать "залогинен ли я" —
+  // спросить сервер, валидна ли cookie
+  useEffect(() => {
+    authApi
+      .me()
+      .then((data) => setUser(data.user))
+      .catch(() => setUser(null))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Вызывается после /login и после /verify — обоим достаточно вернуть user,
+  // сам токен сервер уже положил в cookie ответом
+  function setSession(newUser: AuthUser) {
     setUser(newUser);
   }
 
-  // Серверного /logout пока нет (токен не в cookie, нечего чистить на бэке) —
-  // выход целиком на клиенте
-  function logout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    setToken(null);
-    setUser(null);
+  async function logout() {
+    try {
+      await authApi.logout(); // чистит cookie на сервере
+    } finally {
+      setUser(null);
+    }
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, token, isAuthenticated: !!token, setSession, logout }}
+      value={{ user, isAuthenticated: !!user, isLoading, setSession, logout }}
     >
       {children}
     </AuthContext.Provider>

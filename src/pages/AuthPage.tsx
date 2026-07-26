@@ -8,7 +8,12 @@ type Tab = "login" | "register";
 export function AuthPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Пока не знаем, валидна ли cookie — не показываем форму и не редиректим
+  if (isLoading) {
+    return null;
+  }
 
   // Уже авторизован (например, вернулись назад в истории браузера) —
   // на форме входа/регистрации ему делать нечего
@@ -16,7 +21,6 @@ export function AuthPage() {
     return <Navigate to="/posts" replace />;
   }
 
-  // Активная вкладка определяется текущим путём — /login или /register
   const activeTab: Tab = location.pathname === "/register" ? "register" : "login";
 
   function switchTab(tab: Tab) {

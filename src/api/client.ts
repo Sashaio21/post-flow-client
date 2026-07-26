@@ -13,14 +13,22 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Если сервер вернул 401 — токен невалиден/истёк, разлогиниваем на клиенте
+// Эндпоинты, где 401 — это часть обычной логики формы (неверный пароль,
+// невалидный код и т.п.), а не признак протухшей сессии — редиректить не нужно
+const AUTH_ENDPOINTS = ["/users/login", "/users/register", "/users/verify"];
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const url: string = error.config?.url ?? "";
+    const isAuthEndpoint = AUTH_ENDPOINTS.some((path) => url.includes(path));
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       window.location.href = "/login";
     }
+
     return Promise.reject(error);
   }
 );

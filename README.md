@@ -1,75 +1,257 @@
-# React + TypeScript + Vite
+# PROJECT CONTEXT: post-flow (клиент)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Последнее обновление: 2026-07-25
 
-Currently, two official plugins are available:
+Справка для восстановления контекста без чтения всего кода. Строго
+разделяет "реально в проекте" и "обсуждалось/предлагалось в чате, но не
+применено" — не путать одно с другим.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**Оговорка к этой версии:** в отличие от серверной PROJECT CONTEXT, у
+ассистента нет прямого доступа к файлам клиента (архив не присылался).
+Документ построен по содержимому чата с Claude (2026-07-25) и по
+косвенным подтверждениям — двум скриншотам браузера и описанным вами
+реальным симптомам багов (CORS-ошибка при регистрации, мигающее
+сообщение об ошибке с последующей перезагрузкой при неверном пароле,
+переход "назад" на экран логина после входа). Всё, что не подтверждено
+таким образом, помечено как "написано в чате, применение не
+подтверждено" — рекомендуется свериться с реальными файлами.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 1. Стек
 
-## Expanding the ESLint configuration
+- **React** (Vite-шаблон `react-ts`, точная версия React не проверена)
+- **TypeScript**, `tsconfig.json` с `verbatimModuleSyntax: true`
+  (дефолт нового Vite-шаблона) — требует `import type` для типов
+- **Vite** — сборщик и dev-сервер
+- **react-router-dom** — роутинг, вложенные маршруты через `<Outlet />`
+- **axios** — HTTP-клиент, обёрнут в `api/client.ts`
+- **Tailwind CSS** — выбран для стилизации. Синтаксис настройки
+  (`@import "tailwindcss"`, плагин `@tailwindcss/vite`,
+  `@custom-variant dark`) соответствует Tailwind v4 — фактически
+  установленная версия не проверена
+- **ESLint** выбран при `npm create vite@latest` (не Oxlint)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Дев-сервер: `npm run dev`, порт по умолчанию `5173` (подтверждено
+скриншотом `localhost:5173/login`).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+`.env`: `VITE_API_URL` — адрес API сервера. Значение не проверено,
+в черновике использовалось `http://localhost:3000/api`.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 2. Известные грабли
+
+- **`verbatimModuleSyntax` требует type-only импорт** для типов вроде
+  `ReactNode` — иначе `ts(1484)`. Реально воспроизведено при написании
+  `AuthContext.tsx`. Решение: `import type { X } from "..."` или
+  inline `import { type X, ... }`.
+- **CORS между клиентом (`5173`) и сервером (`3000`) в dev** — без
+  `cors()`-мидлвара на бэкенде любой запрос из браузера падает.
+  Реально воспроизведено: регистрация завершалась текстом "Не удалось
+  зарегистрироваться, попробуйте позже" (fallback-ветка ошибки,
+  сработавшая из-за отсутствия ответа от сервера). Чинится на
+  сервере, не на клиенте.
+- **Баг глобального response-интерцептора axios** (в `api/client.ts`):
+  изначальная версия трактовала **любой** `401` как протухшую сессию
+  и делала `window.location.href = "/login"` — это ловило и `401` от
+  самого `/users/login` (неверный пароль), из-за чего сообщение об
+  ошибке на форме мелькало на секунду, а затем страница жёстко
+  перезагружалась. Реально воспроизведено. Исправление (исключить
+  `/users/login`, `/users/register`, `/users/verify` из этой логики)
+  написано в чате — **применение и повторное тестирование после
+  фикса не подтверждено**.
+- **Кнопка "назад" после логина возвращала на `/login`**, т.к.
+  `navigate("/posts")` не убирал предыдущую запись из истории браузера,
+  а `/login` как публичный роут не проверял авторизацию — форма просто
+  отрисовывалась заново. Реально воспроизведено. Исправление
+  (`navigate(..., { replace: true })` + редирект уже авторизованных
+  пользователей прямо из `AuthPage`) написано в чате — **применение не
+  подтверждено**.
+
+---
+
+## 3. Структура файлов
+
+Ниже — файлы, код для которых был написан и передан в этом чате.
+**Не подтверждено сканированием реальных файлов** — только то, что вы
+их скопировали к себе, как было предложено.
 
 ```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+client/src/
+├── api/
+│   ├── client.ts       # axios-инстанс, интерцепторы токена и 401
+│   └── auth.ts          # register / verifyEmail / login
+├── auth/
+│   ├── AuthContext.tsx  # setSession / logout / isAuthenticated
+│   ├── ProtectedRoute.tsx
+│   ├── LoginForm.tsx
+│   └── RegisterForm.tsx
+├── hooks/
+│   └── useTheme.ts       # light/dark, localStorage
+├── layouts/
+│   └── AppLayout.tsx     # шапка: навигация, email, выход, тема
+├── pages/
+│   ├── AuthPage.tsx        # табы Вход/Регистрация
+│   ├── VerifyEmailPage.tsx
+│   └── PostsPage.tsx       # заглушка без логики: <div>PostsPage</div>
+├── App.tsx                 # весь роутинг
+└── main.tsx                 # не менялся в чате, содержимое не проверено
 ```
+
+**`pages/LoginPage.tsx` и `pages/RegisterPage.tsx` были явно предложены
+к удалению** после введения табов (`AuthPage`) — не подтверждено,
+удалены ли они реально.
+
+**Не созданы (только обсуждались):** `api/posts.ts`,
+`api/socialConnections.ts` — см. раздел 8.
+
+---
+
+## 4. Слой работы с API
+
+### `api/client.ts`
+
+Настроенный `axios`-инстанс:
+- `baseURL` из `VITE_API_URL`
+- request-интерцептор: подставляет `Authorization: Bearer <token>` из
+  `localStorage`, если токен есть
+- response-интерцептор: на `401` — чистит `localStorage` и делает
+  `window.location.href = "/login"`, **кроме** запросов к
+  `/users/login`, `/users/register`, `/users/verify` (фикс после
+  реального бага — применение не подтверждено, см. раздел 2)
+
+### `api/auth.ts`
+
+- **`register(email, password): Promise<{ message, email }>`**
+  `POST /users/register`. Токен не возвращает — только отправляет код
+  на почту.
+- **`verifyEmail(email, code): Promise<{ user, token }>`**
+  `POST /users/verify`.
+- **`login(email, password): Promise<{ user, token }>`**
+  `POST /users/login`.
+
+Функции `logout()` нет — серверного `/api/users/logout` не существует
+(работа с httpOnly cookie отложена, см. раздел 9).
+
+---
+
+## 5. Реализованные компоненты и хуки
+
+- **`AuthContext` / `useAuth()`**
+  Хранит `user`/`token` в React-состоянии + `localStorage`.
+  `setSession(user, token)` — используется и после `login`, и после
+  `verifyEmail`, т.к. оба возвращают одинаковую форму ответа.
+  `logout()` — чисто клиентский (нет серверного эндпоинта).
+  `isAuthenticated` — `!!token`.
+
+- **`ProtectedRoute`**
+  Рендерит `<Outlet />`, если есть токен **или** включён
+  `VITE_SKIP_AUTH` (dev-флаг, см. раздел 8), иначе — `<Navigate to="/login" />`.
+
+- **`useTheme()`**
+  `light`/`dark`, применяет класс `dark` на `<html>`, сохраняет выбор
+  в `localStorage("theme")`.
+
+- **`AppLayout`**
+  Шапка: `NavLink` на `/posts` (подсветка активного пункта), email
+  пользователя из `useAuth()`, кнопка "Выйти" (`logout()`), кнопка
+  переключения темы (эмодзи вместо иконок). `<Outlet />` для содержимого
+  страницы.
+
+- **`LoginForm`**
+  Форма email/пароль → `authApi.login()`. На `403` (`EMAIL_NOT_VERIFIED`)
+  — редирект на `/verify?email=...`. На успех — `setSession()` +
+  `navigate("/posts", { replace: true })`.
+
+- **`RegisterForm`**
+  Форма email/пароль → `authApi.register()`. На успех — редирект на
+  `/verify?email=...`.
+
+---
+
+## 6. Маршруты (роутинг)
+
+- **`/login`**, **`/register`** → `AuthPage` (публичные; активная
+  вкладка определяется по `pathname`; если пользователь уже
+  авторизован — редирект на `/posts`)
+- **`/verify`** → `VerifyEmailPage` (публичный)
+- **`/`** → редирект на `/posts` (внутри защищённой зоны)
+- **`/posts`** → `PostsPage` (защищённый маршрут)
+- **`*`** (любой другой путь) → редирект на `/`
+
+> Вложенность защищённой зоны: `ProtectedRoute` → `AppLayout` →
+> конкретная страница, через `<Outlet />` на каждом уровне. Переходы
+> после успешного `login`/`verify` используют `{ replace: true }`,
+> чтобы `/login` не оставался в истории браузера (см. раздел 2 про
+> баг с кнопкой "назад" — применение фикса не подтверждено).
+
+---
+
+## 7. Конвенции проекта
+
+- **Форма отделена от страницы**: `XForm` (например `LoginForm`,
+  `RegisterForm`) отвечает только за сабмит и локальное состояние поля
+  ввода/ошибки; `XPage` (например `AuthPage`) — за обвязку, вкладки,
+  редиректы. Новые auth-подобные экраны следует делать по этому же
+  паттерну.
+- **Токен и сессия — только через `useAuth()`**, не напрямую из
+  `localStorage` в компонентах (кроме самого `AuthContext` и
+  интерцепторов `api/client.ts`, которым это положено по роли).
+- **Ошибки API маппятся на текст прямо в компоненте формы** (константа
+  вида `ERROR_MESSAGES: Record<number, string>` по HTTP-статусу), не в
+  общем слое.
+- **В `api/client.ts` `401` с auth-эндпоинтов не триггерит глобальный
+  логаут/редирект** — это часть обычной логики формы, а не признак
+  протухшей сессии.
+- **Стилизация — Tailwind-классы прямо в JSX.** Тёмная тема — через
+  class-стратегию (`@custom-variant dark`), переключатель хранится в
+  `localStorage("theme")`.
+- **Комментарии в коде — на русском** (та же конвенция, что на бэкенде).
+- **Общие типы** (`AuthUser` и т.п.) объявляются прямо в `api/*.ts`
+  рядом с функциями, которые их возвращают — отдельного файла типов
+  пока нет.
+
+---
+
+## 8. Обсуждалось, но не применено
+
+Всё ниже — обсуждалось/писалось в чате с Claude (2026-07-25), в
+реальный код **не подтверждено как внесённое**.
+
+- **`api/posts.ts`, `api/socialConnections.ts`** — обсуждались как
+  нужные файлы под соответствующие ресурсы бэкенда, код ни разу не
+  писался.
+- **`VITE_SKIP_AUTH`** — dev-флаг для обхода `ProtectedRoute` без
+  токена (для тестирования без авторизации). Код дан, применение не
+  подтверждено. Явно проговорено, что перед показом кому-либо/деплоем
+  его нужно убрать — иначе вся защита маршрутов окажется бутафорской.
+- **Исключение auth-эндпоинтов из глобального 401-редиректа** в
+  `api/client.ts` — написано в ответ на реальный воспроизведённый баг,
+  повторное тестирование после фикса не подтверждено.
+- **Фикс "кнопки назад"** (`replace: true` в `navigate()` + редирект
+  авторизованных пользователей прямо из `AuthPage`) — написан,
+  применение не подтверждено.
+- **httpOnly cookie для токена** — обсуждалось раньше отдельно (план с
+  `cookie-parser`, `sameSite`, `/api/users/logout` на сервере), затем
+  явно отложено вами в пользу тестирования функциональности.
+- **React Query / любой стейт-менеджер для серверных данных** —
+  обсуждалось, решено пока не добавлять.
+- **`lucide-react` вместо эмодзи** в переключателе темы — упомянуто
+  как возможная замена, не сделано.
+
+---
+
+## 9. Открытые технические решения
+
+- **Хранение токена**: сейчас `localStorage` (простое, но уязвимо для
+  XSS) — альтернатива httpOnly cookie обсуждалась и отложена, не
+  решено окончательно, к какому варианту вернуться перед продакшеном.
+- **CORS-origin в проде**: в примерах для сервера использовался
+  захардкоженный `http://localhost:5173`, финальный домен фронта в
+  проде не определён.
+- **Формат тела ошибки от `/users/register` и `/users/login`** не
+  подтверждён — клиентский маппинг ошибок в `ERROR_MESSAGES` сделан по
+  HTTP-статусу "вслепую", не по факту реальной структуры JSON-ответа.
+- **Библиотека иконок** для интерфейса не выбрана — сейчас эмодзи как
+  временная заглушка.

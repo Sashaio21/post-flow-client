@@ -1,3 +1,76 @@
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-bg: var(--pf-bg);
+  --color-surface: var(--pf-surface);
+  --color-surface-2: var(--pf-surface-2);
+  --color-column: var(--pf-column);
+  --color-line: var(--pf-line);
+  --color-fg: var(--pf-fg);
+  --color-muted: var(--pf-muted);
+  --color-draft: var(--pf-draft);
+  --color-scheduled: var(--pf-scheduled);
+  --color-published: var(--pf-published);
+  --color-danger: var(--pf-danger);
+  --color-on-accent: var(--pf-on-accent);
+  --color-tg: var(--pf-tg);
+  --color-ig: var(--pf-ig);
+  --color-vk: var(--pf-vk);
+  --color-threads-bg: var(--pf-threads-bg);
+  --color-threads-fg: var(--pf-threads-fg);
+
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+:root {
+  /* Light — default */
+  --pf-bg: #f6f4ef;
+  --pf-surface: #ffffff;
+  --pf-surface-2: #efece3;
+  --pf-column: #f1eee5;
+  --pf-line: #e1ddd0;
+  --pf-fg: #1b2129;
+  --pf-muted: #736e62;
+  --pf-draft: #736e62;
+  --pf-scheduled: #b97a1e;
+  --pf-scheduled-soft: rgba(185, 122, 30, 0.08);
+  --pf-published: #4f8f6b;
+  --pf-danger: #c24f68;
+  --pf-danger-soft: rgba(194, 79, 104, 0.08);
+  --pf-on-accent: #ffffff;
+  --pf-tg: #2e7fb0;
+  --pf-ig: #b23e71;
+  --pf-vk: #3d6da8;
+  --pf-threads-bg: #1b2129;
+  --pf-threads-fg: #f6f4ef;
+}
+
+.dark {
+  --pf-bg: #12161c;
+  --pf-surface: #1b2129;
+  --pf-surface-2: #202832;
+  --pf-column: #171c23;
+  --pf-line: #2a323d;
+  --pf-fg: #edeae2;
+  --pf-muted: #8b93a1;
+  --pf-draft: #8b93a1;
+  --pf-scheduled: #e8a33d;
+  --pf-scheduled-soft: rgba(232, 163, 61, 0.1);
+  --pf-published: #6fae8c;
+  --pf-danger: #d6738a;
+  --pf-danger-soft: rgba(214, 115, 138, 0.1);
+  --pf-on-accent: #1b1300;
+  --pf-tg: #4ea1d3;
+  --pf-ig: #d6538b;
+  --pf-vk: #5b8cd6;
+  --pf-threads-bg: #12161c;
+  --pf-threads-fg: #edeae2;
+}
+
+body {
+  font-family: var(--font-sans);
+}

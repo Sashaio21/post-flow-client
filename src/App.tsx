@@ -5,6 +5,9 @@ import { AppLayout } from "./layouts/AppLayout";
 import { AuthPage } from "./pages/AuthPage";
 import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { PostsPage } from "./pages/PostsPage";
+import { ConnectionsPage } from "./pages/ConnectionsPage";
+import { PostFormPage } from "./pages/PostFormPage";
+
 
 export default function App() {
   return (
@@ -22,6 +25,9 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<Navigate to="/posts" replace />} />
               <Route path="/posts" element={<PostsPage />} />
+              <Route path="/posts/new" element={<PostFormPage />} />
+              <Route path="/connections" element={<ConnectionsPage />} />
+              <Route path="/archive" element={<h1>Archive</h1>} />
             </Route>
           </Route>
 

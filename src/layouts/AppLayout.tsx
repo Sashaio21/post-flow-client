@@ -3,11 +3,17 @@ import { useAuth } from "../auth/AuthContext";
 import { useTheme } from "../hooks/useTheme";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `px-3 py-2 rounded text-sm font-medium transition-colors ${
-    isActive
-      ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
-      : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+  `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+    isActive ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg"
   }`;
+
+// Пункты бокового меню. Календарь пока не строим — ссылку не добавляем,
+// чтобы не вести на несуществующий экран.
+const sidebarItems = [
+  { to: "/posts", label: "Посты" },
+  { to: "/archive", label: "Архив" },
+  { to: "/connections", label: "Подключения" },
+];
 
 export function AppLayout() {
   const { user, logout } = useAuth();
@@ -15,34 +21,30 @@ export function AppLayout() {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100">
-      <header className="border-b border-gray-200 dark:border-gray-800">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <nav className="flex items-center gap-1">
-            <NavLink to="/posts" className={navLinkClass}>
-              Посты
-            </NavLink>
-            {/* Появятся по мере готовности экранов */}
-            {/* <NavLink to="/social-connections" className={navLinkClass}>Подключения</NavLink> */}
-            {/* <NavLink to="/templates" className={navLinkClass}>Шаблоны</NavLink> */}
-          </nav>
+    <div className="min-h-screen bg-bg text-fg">
+      <header className="border-b border-line bg-surface">
+        <div className="px-4 h-14 flex items-center justify-between">
+          <span className="font-display font-bold text-lg tracking-tight flex items-center gap-2">
+            <span className="w-2 h-2 rounded-[2px] bg-scheduled rotate-45" />
+            post-flow
+          </span>
 
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={toggleTheme}
               aria-label="Переключить тему"
-              className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-2 text-muted"
             >
               {theme === "light" ? "🌙" : "☀️"}
             </button>
 
-            <span className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</span>
+            <span className="text-sm text-muted">{user?.email}</span>
 
             <button
               type="button"
               onClick={() => logout().then(() => navigate("/login", { replace: true }))}
-              className="text-sm px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-800"
+              className="text-sm px-3 py-1.5 rounded-lg border border-line hover:bg-surface-2"
             >
               Выйти
             </button>
@@ -50,9 +52,19 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        <Outlet />
-      </main>
+      <div className="flex">
+        <aside className="w-[220px] shrink-0 bg-surface border-r border-line p-4 flex flex-col gap-1 sticky top-14 h-[calc(100vh-56px)]">
+          {sidebarItems.map((item) => (
+            <NavLink key={item.to} to={item.to} className={navLinkClass}>
+              {item.label}
+            </NavLink>
+          ))}
+        </aside>
+
+        <main className="flex-1 px-6 py-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
